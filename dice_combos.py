@@ -15,7 +15,7 @@ class Has4():
     def __call__(self, dice_list):
         count = sum([1 if d == self.num else 0 for d in dice_list])
         if(count > 3):
-            remaining = [d for d in dice_list if d != self.num] + ([self.num] * (count - 3))
+            remaining = [d for d in dice_list if d != self.num] + ([self.num] * (count - 4))
             points = self.num * 200 if self.num != 1 else 2000
             return (points, remaining)
         return None
