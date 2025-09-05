@@ -20,6 +20,28 @@ class Has4():
             return (points, remaining)
         return None
 
+class Has5():
+    def __init__(self, n):
+        self.num = n
+    def __call__(self, dice_list):
+        count = sum([1 if d == self.num else 0 for d in dice_list])
+        if(count > 4):
+            remaining = [d for d in dice_list if d != self.num] + ([self.num] * (count - 5))
+            points = self.num * 400 if self.num != 1 else 4000
+            return (points, remaining)
+        return None
+
+class Has6():
+    def __init__(self, n):
+        self.num = n
+    def __call__(self, dice_list):
+        count = sum([1 if d == self.num else 0 for d in dice_list])
+        if(count > 5):
+            remaining = []
+            points = self.num * 800 if self.num != 1 else 8000
+            return (points, remaining)
+        return None
+
 class HasM_Ns():
     def __init__(self, m, n):
         self.points = (n*10 if n != 1 else 100) * m
@@ -48,10 +70,5 @@ def has3Pairs(dice_list):
         return (1000, [])
     return None
 
-def get_checkers():
-    checkers = [has3Pairs, HasM_Ns(1, 1), HasM_Ns(2, 1), HasM_Ns(1, 5), HasM_Ns(2, 5)]
-    for i in range(1,7):
-        checkers.append(Has3(i))
-        checkers.append(Has4(i))
-
-    return checkers
+def hasStraight(dice_list):
+    return sorted(dice_list) == list(range(1, 7))

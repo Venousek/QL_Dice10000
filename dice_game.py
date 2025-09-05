@@ -3,11 +3,21 @@ from dice_combos import get_checkers
 
 global_cache = {}
 global_cache['123456'] = [(1000, [], [1,2,3,4,5,6])] # cache a straight
-checkers = get_checkers()
 
-def rollDice(n: int):
+def rollDice(n: int, manual_roll: bool):
     """Rolls n 6-sided dice, and returns the integer values as a sorted numpy array"""
-    return sorted(np.random.randint(1,7,n))
+    if manual_roll:
+        while True:
+            rolled_dice = input(f'Type in your rolled dice (no spaces or separators), dice count = {n}: ')
+            try:
+                res = sorted(np.array([int(d) for d in rolled_dice]))
+                if len(res) == n and all(1 <= d <= 6 for d in res):
+                    return res
+            except ValueError:
+                pass
+            print(f'Invalid input. Please enter exactly {n} dice.')
+    else:
+        return sorted(np.random.randint(1,7,n))
 
 def cache_get(dice_list):
     """Turns the given dice list into a key for the cache, and looks up the value in the cache
@@ -28,7 +38,7 @@ def cache_put(dice_list, combos):
     key = "".join([str(d) for d in dice_list])
     global_cache[key] = combos
 
-def analyzeRoll(roll):
+def analyzeRoll(roll, checkers):
     """ Identifies all possible options available from the given roll. Returns a list of tuples (points, dice used, dice remaining).
 
         ie: If a player rolls [1,2,2,2,4,5], they have a number of legal choices
@@ -87,7 +97,16 @@ class DiceGame():
         The meat of this class is the .play() method, everything else is basically helper functions for updating
         internal state, and printing, in an effort to make .play() less painful.
     """
-    def __init__(self, players, goal_score=5000, tags=None, verbose=True):
+    def __init__(
+            self,
+            players,
+            goal_score=5000,
+            checkers=None,
+            tags=None,
+            verbose=True,
+            stealing_mode=True,
+            manual_roll=False,
+        ):
         assert(len(players) >= 2)
 
         self.players = players
@@ -101,6 +120,9 @@ class DiceGame():
         self.next_player_idx = 1
         self.factor = 10
         self.verbose = verbose
+        self.stealing_mode = stealing_mode
+        self.manual_roll = manual_roll
+        self.checkers = checkers
 
     def debug(self, obj):
         if(self.verbose):
@@ -138,8 +160,8 @@ class DiceGame():
 
     def roll(self, state, idx, is_stealing=False):
         """Rolls some dice, generates options, and does printing based on the results"""
-        player_roll = rollDice(state[1])
-        analysis = analyzeRoll(player_roll)
+        player_roll = rollDice(state[1], self.manual_roll)
+        analysis = analyzeRoll(player_roll, self.checkers)
         options = analysis_to_options(analysis, state[0])
         tag = self.tags[idx]
 
@@ -197,9 +219,12 @@ class DiceGame():
                 continue
 
             # if the player didn't fail, the next player gets to choose whether to steal
-            stealer, stealer_tag = self.getStealer()
-            stealable_state = (self.turn_state[0], self.turn_state[1], True)
-            chose_to_steal = self.select([stealable_state, self.base_state], self.next_player_idx, True) == stealable_state
+            if self.stealing_mode:
+                stealer, stealer_tag = self.getStealer()
+                stealable_state = (self.turn_state[0], self.turn_state[1], True)
+                chose_to_steal = self.select([stealable_state, self.base_state], self.next_player_idx, True) == stealable_state
+            else:
+                chose_to_steal = False
             
             # if next player chooses not to steal, we award the current player points, and move on to the next turn 
             if not chose_to_steal:
